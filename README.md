@@ -9,8 +9,8 @@ Ez a Python-szkript **pivot szintek érintését és azok utáni árfolyammozgá
 1. A szkript minden napra kiszámítja a klasszikus **pivot szinteket**:
    - R3, R2, R1, Pivot, S1, S2, S3
    - Valamint köztes szinteket is (pl. R1.5, S0.5 stb.)
-2. Tick alapon elemzi, **melyik szintet érintette meg először az árfolyam** az adott napon.
-3. Megvizsgálja, hogy az **első érintett szint után** felfelé vagy lefelé haladva melyik szomszédos szintet érte el előbb.
+2. Tick alapon elemzi, **melyik szintet mikor érintette meg először az árfolyam** az adott napon.
+3. Megvizsgálja, hogy az **első érintés után** felfelé vagy lefelé haladva melyik szomszédos szintet érte el előbb.
 4. Az eredmények alapján megállapítja, hogy az ár az érintés után felfelé vagy lefelé mozgott-e hamarabb.
 5. Az eredményeket a konzolra írja, és (opcionálisan) minden napról ment egy grafikont az adott instrumentum mappájába.
 
@@ -66,10 +66,10 @@ python pivot_analysis.py
 
 Konzolra:
 
-- Melyik szintet érintette meg először az ár az adott napon.
+- Érintett szintek az adott napon.
 - Az ezt követő mozgás iránya és a következő szint.
 - Siker vagy kudarc (vagy egyik szint sem lett elérve).
-- Nap végi statisztika: sikerarány, semleges napok száma stb.
+- Periódus végi statisztika: melyik szintet hányszor érintette (max 1/nap), az ezt követő mozgás iránya és a következő szint. 
 
 Fájlban:
 
@@ -96,7 +96,7 @@ pivot/
 
 - A MetaTrader terminálnak futnia kell, és be kell jelentkezni, különben az adatok nem lesznek elérhetők.
 - Tick adatok lekérdezése több instrumentumra és hosszabb időszakra időigényes lehet.
-- A TOLERANCE érték kritikus fontosságú – ha túl alacsony, akkor lehet, hogy nem érzékeli az érintéseket.
+- A TOLERANCE érték kritikus fontosságú – ha túl alacsony, akkor lehet, hogy nem érzékeli az érintéseket. 
 
 ---
 
