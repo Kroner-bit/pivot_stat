@@ -1,124 +1,107 @@
-# 📈 Pivot Szint Érintés Elemző – MetaTrader 5 alapú backteszt
 
-Ez a Python-szkript **pivot szintek érintését és azok utáni árfolyammozgásokat** elemzi a MetaTrader 5 (MT5) platformról letöltött tick-adatok alapján. Az elemzés célja, hogy statisztikát nyújtson arról, melyik pivot szint érintése után milyen ármozgások történnek.
+# Pivot és mid-szintek statisztikai elemzése 1M OHLC adatokból
 
----
+Ez a program 1 perces (1M) OHLC (Open, High, Low, Close) adatokból napi pivot- és mid-szintek (S3…R3, mid_...-... , PP) első érintésének és az első szomszéd elérésének statisztikáját készíti el.
 
-## 🧠 Működés
+## Fő funkciók
 
-1. A szkript minden napra kiszámítja a klasszikus **pivot szinteket**:
-   - R3, R2, R1, Pivot, S1, S2, S3
-   - Valamint köztes szinteket is (pl. R1.5, S0.5 stb.)
-2. Tick alapon elemzi, **melyik szintet mikor érintette meg először az árfolyam** az adott napon.
-3. Megvizsgálja, hogy az **első érintés után** felfelé vagy lefelé haladva melyik szomszédos szintet érte el előbb.
-4. Az eredmények alapján megállapítja, hogy az ár az érintés után felfelé vagy lefelé mozgott-e hamarabb.
-5. Az eredményeket a konzolra írja, és (opcionálisan) minden napról ment egy grafikont az adott instrumentum mappájába.
+- **Pivot- és mid-szintek számítása**: A tegnapi High, Low, Close alapján kiszámítja a klasszikus pivot szinteket (S3, S2, S1, PP, R1, R2, R3) és a köztes mid-szinteket (pl. `mid_S2-S3`, `mid_PP-S1`).
+- **Első érintés elemzése**: Minden kereskedési napon minden szintnél megvizsgálja, hogy az árfolyam mikor érintette először az adott szintet, és hogy utána először a közvetlen felső vagy alsó szomszédszintet érte-e el.
+- **Statisztikai összesítés**: Megmutatja, hogy az egyes szinteknél az első szomszéd elérésének aránya merre történt (le/fel), illetve ezek százalékos megoszlását.
+- **Automatikus vizualizáció**: A program elmenti a fő eredménytáblázatot PNG-ben, valamint egy bar chartot is generál a szomszéd elérésének arányairól.
 
----
+## Használat
 
-## ⚙️ Beállítások – config.json
+```sh
+python main.py --csv <input_file> [--sep <separator>] [--tz <timezone>] [--datetime <col>] [--open <col>] [--high <col>] [--low <col>] [--close <col>]
+```
 
-A konfigurációs fájl így néz ki:
+### Példa
 
-{
-  "SYMBOLS": ["EURUSD", "GBPUSD"],
-  "TIMEFRAME": "M1",
-  "DATE_FROM": "2024-01-01",
-  "DATE_TO": "2024-01-31",
-  "TOLERANCE": {
-    "EURUSD": 0.0002,
-    "GBPUSD": 0.0003
-  },
-  "SAVE_DAILY_CHARTS": true
-}
+```sh
+python main.py --csv audcad_1m.csv --sep "\t" --tz Europe/Budapest
+```
 
-Paraméterek leírása:
+### Paraméterek
 
-- SYMBOLS: A vizsgálni kívánt instrumentum(ok) listája.
-- TIMEFRAME: Az elemzéshez használt időkeret (pl. M1, M5, stb.)
-- DATE_FROM, DATE_TO: Az elemzendő időszak kezdete és vége.
-- TOLERANCE: Pontossági érték szintérintés meghatározásához (instrumentumonként).
-- SAVE_DAILY_CHARTS: Ha true, akkor minden napról mentésre kerül egy grafikon (.png).
+- `--csv` (**kötelező**): Bemeneti CSV/TSV fájl (pl. MetaTrader export)
+- `--sep`: Mezőelválasztó (alapértelmezett: tab, azaz `\t`)
+- `--tz`: Cél időzóna a napi határokhoz (alapértelmezett: UTC, pl. `Europe/Budapest`)
+- `--datetime`, `--open`, `--high`, `--low`, `--close`: Oszlopnevek testreszabása (alapértelmezett: MetaTrader formátum)
 
----
+## Bemeneti fájl formátuma
 
-## 📦 Követelmények
+A program automatikusan felismeri a fejlécet. Elvárt oszlopok:
 
-- Python 3.7+
-- Telepített MetaTrader 5 terminál
-- Telepített következő Python csomagok:
+- Time (vagy testreszabható)
+- Open
+- High
+- Low
+- Close
+- Volume (nem kötelező, de lehet benne)
+- Extra oszlopok figyelmen kívül lesznek hagyva
 
-pip install MetaTrader5 pandas matplotlib
+Példa (tab szeparált):
 
----
+```
+Time\tOpen\tHigh\tLow\tClose\tVolume
+2024-12-24 04:37:00\t0.89691\t0.89702\t0.89684\t0.89687\t26
+...
+```
 
-## ▶️ Használat
+## Kimenet
 
-1. Töltsd le vagy klónozd a projektet.
-2. Módosítsd a config.json fájlt igény szerint.
-3. Futtasd a pivot_analysis.py szkriptet:
+A program az **ELSŐ IRÁNY** statisztikát írja ki, például:
 
-python pivot_analysis.py
+```
+ELSŐ IRÁNY (melyik szomszédot érte el először):
+Pivot         Mintaszám     Le első%    Fel első%    Össz%
+----------------------------------------------------------
+S3                   11         0.0%        90.9%    90.9%
+mid_S2-S3            15        53.3%        46.7%   100.0%
+...
+```
 
----
+- **Pivot**: Az adott szint neve (pl. S1, mid_PP-S1, PP, stb.)
+- **Mintaszám**: Hányszor volt az adott szint először érintve egy napon
+- **Le első%**: Hány százalékban érte el először az alsó szomszédot
+- **Fel első%**: Hány százalékban érte el először a felső szomszédot
+- **Össz%**: A két irány összege (ha egyik szomszédot sem érte el, ez kevesebb mint 100%)
 
-## 📊 Kimenet
+Az eredmények automatikusan elmentésre kerülnek:
 
-Konzolra:
+- **Táblázat PNG-ben**: `elso_irany_table.png`
+- **Bar chart**: `elso_irany_barchart.png`
 
-- Érintett szintek az adott napon.
-- Az ezt követő mozgás iránya és a következő szint.
-- Siker vagy kudarc (vagy egyik szint sem lett elérve).
-- Periódus végi statisztika: melyik szintet hányszor érintette (max 1/nap), az ezt követő mozgás iránya és a következő szint. 
+### Példák a kimeneti ábrákra
 
-Fájlban:
+#### Eredménytáblázat (PNG)
+![Eredménytáblázat](elso_irany_table.png)
 
-- Opcionálisan mentésre kerülnek a napi grafikonok a ./{SYMBOL}/chart_{SYMBOL}_{YYYY-MM-DD}.png útvonalra.
-- A fájlok külön mappában vannak instrumentumonként.
+#### Bar chart (PNG)
+![Bar chart](elso_irany_barchart.png)
 
----
+## Megjegyzések
 
-## 🧪 Kódfelépítés
+- Egy napon több pivot szint is lehet "első érintés" (azaz minden szintnél csak az első érintést számolja, ha aznap először érte el az ár).
+- A program automatikusan kezeli a fejlécet, extra oszlopokat, és a különböző időzónákat.
+- A mid-szintek elnevezése: `mid_<felette lévő szint>-<alatta lévő szint>` (pl. mid_PP-S1).
+- Pie chart NINCS, csak táblázat és bar chart készül.
 
-pivot/
-│
-├── pivot_analysis.py      # A fő elemző szkript
-├── config.json            # Konfigurációs fájl
-├── EURUSD/                # Mentett napi grafikonok az EURUSD-re
-│   └── chart_EURUSD_2024-01-02.png
-├── GBPUSD/                # Mentett napi grafikonok a GBPUSD-re
-│   └── chart_GBPUSD_2024-01-02.png
-└── README.md              # Ez a dokumentáció
+## Függőségek
 
----
+- pandas
+- pytz
+- matplotlib
 
-## 📌 Fontos tudnivalók
+Telepítés:
 
-- A MetaTrader terminálnak futnia kell, és be kell jelentkezni, különben az adatok nem lesznek elérhetők.
-- Tick adatok lekérdezése több instrumentumra és hosszabb időszakra időigényes lehet.
-- A TOLERANCE érték kritikus fontosságú – ha túl alacsony, akkor lehet, hogy nem érzékeli az érintéseket. 
+```sh
+pip install pandas pytz matplotlib
+```
 
----
+## Szerző
 
-## 🚀 Jövőbeli fejlesztések (ötletek)
+Króner Barnabás
+FOREXHUN
 
-- CSV export a naplózott eredményekből.
-- GUI beépítése konfigurációhoz.
-- Többféle pivot számítás (Fibonacci, Woodie stb.).
-- Machine learning modellek tanítása az adatokból.
-
----
-
-## 📮 Kapcsolat
-
-Ha kérdésed van, hibát találtál vagy javaslatod van, nyiss egy issue-t vagy írj üzenetet.
-
----
-
-Készült: Python + MetaTrader5 + Pivot elmélet alapján.  
-📅 Készült: 2025  
-👨‍💻 Fejlesztő: Króner
-
----
-
-Ez a projekt oktatási célokra készült. Használata saját felelősségre történik.
